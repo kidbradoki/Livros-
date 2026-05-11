@@ -1,0 +1,60 @@
+/* Configurações Gerais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    color: #222;
+    line-height: 1.8;
+}
+
+header {
+    background: #222;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+#book-container {
+    background: white;
+    width: 100%;
+    max-width: 800px;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    font-size: 18px;
+    white-space: pre-line;
+}
+
+/* Botão Voltar ao Topo */
+#topBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #222;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    font-size: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+#topBtn:hover {
+    background: #444;
+}
