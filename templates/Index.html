@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header><h1>📖 Leitor Pro</h1></header>
+    <main><div id="book-container">{{ book_text }}</div></main>
+    <button id="topBtn">⬆</button>
+
+    <script>
+        const container = document.getElementById('book-container');
+        window.onload = () => {
+            const pos = localStorage.getItem('readingPos');
+            if (pos) window.scrollTo(0, parseInt(pos));
+        };
+        window.onscroll = () => {
+            localStorage.setItem('readingPos', window.scrollY);
+        };
+        document.getElementById('topBtn').onclick = () => window.scrollTo({top: 0, behavior: 'smooth'});
+    </script>
+</body>
+</html>
