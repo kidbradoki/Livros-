@@ -1,36 +1,64 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Biblioteca</title>
-    <style>
-        body { font-family: sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; }
-        .upload-section { border: 2px dashed #ccc; padding: 15px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
-        .btn-upload { background: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .livro-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
-        .btn-ler { text-decoration: none; background: #007bff; color: white; padding: 6px 12px; border-radius: 4px; font-size: 14px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>📚 Meus Livros</h2>
-        <div class="upload-section">
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" accept=".pdf" required>
-                <button type="submit" class="btn-upload">Enviar PDF</button>
-            </form>
-        </div>
-        <div>
-            {% for livro in livros %}
-            <div class="livro-item">
-                <span style="font-size: 14px; max-width: 60%; overflow: hidden;">{{ livro['titulo'] }}</span>
-                <a href="/ler/{{ livro['id'] }}" class="btn-ler">Ler</a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</body>
-</html>
+import os
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+
+# Configurações de caminhos
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+DB_PATH = os.path.join(BASE_DIR, 'biblioteca.db')
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Cria a pasta de uploads se não existir para evitar erros de escrita
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Inicialização do Banco de Dados
+with get_db() as conn:
+    conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT)')
+    conn.commit()
+
+@app.route('/')
+def index():
+    db = get_db()
+    livros = db.execute('SELECT id, titulo FROM livros').fetchall()
+    # Enviamos 'livros' (lista), não 'livro' (único)
+    return render_template('biblioteca.html', livros=livros)
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files.get('file')
+    if file and file.filename.endswith('.pdf'):
+        filename = secure_filename(file.filename)
+        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(path)
+        
+        db = get_db()
+        db.execute('INSERT INTO livros (titulo) VALUES (?)', (filename,))
+        db.commit()
+    return redirect(url_for('index'))
+
+@app.route('/ler/<int:id>')
+def ler(id):
+    db = get_db()
+    # Busca apenas o livro clicado. Aqui a variável 'livro' é definida.
+    livro = db.execute('SELECT * FROM livros WHERE id = ?', (id,)).fetchone()
+    if livro:
+        return render_template('leitor.html', livro=livro)
+    return redirect(url_for('index'))
+
+@app.route('/uploads/<filename>')
+def serve_pdf(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
