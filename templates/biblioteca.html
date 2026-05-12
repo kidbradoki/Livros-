@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Biblioteca</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; }
+        .livro { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn { background: #007bff; color: white; text-decoration: none; padding: 5px 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>📚 Meus Livros</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".pdf" required>
+            <button type="submit">Enviar PDF</button>
+        </form>
+        <hr>
+        {% for livro in livros %}
+        <div class="livro">
+            <span>{{ livro['titulo'] }}</span>
+            <a href="/ler/{{ livro['id'] }}" class="btn">Ler</a>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
