@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# Configurações de caminhos absolutos para o Railway
+# Caminhos absolutos para o ambiente do Railway
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'biblioteca.db')
@@ -21,13 +21,12 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Inicializa o banco de dados
+# Inicializa o banco de dados sem frescuras
 with get_db() as conn:
     conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT)')
-    conn.execute('CREATE TABLE IF NOT EXISTS progresso (id_livro INTEGER PRIMARY KEY, posicao INTEGER, dark_mode INTEGER DEFAULT 0)')
     conn.commit()
 
-# Rota para servir o PDF original (Resolve o problema das imagens)
+# Rota para abrir o PDF original (perfeito para livros com imagens)
 @app.route('/uploads/<filename>')
 def serve_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -55,17 +54,7 @@ def upload():
 def ler(id):
     db = get_db()
     livro = db.execute('SELECT * FROM livros WHERE id = ?', (id,)).fetchone()
-    progresso = db.execute('SELECT * FROM progresso WHERE id_livro = ?', (id,)).fetchone()
-    return render_template('leitor.html', livro=livro, progresso=progresso)
-
-@app.route('/salvar_progresso', methods=['POST'])
-def salvar():
-    data = request.json
-    db = get_db()
-    db.execute('INSERT OR REPLACE INTO progresso (id_livro, posicao, dark_mode) VALUES (?, ?, ?)',
-               (data['id'], data['pos'], data['dark']))
-    db.commit()
-    return jsonify({"status": "ok"})
+    return render_template('leitor.html', livro=livro)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
