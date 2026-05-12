@@ -11,7 +11,8 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'biblioteca.db')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# Garante que a pasta de uploads exista antes de iniciar
+
+# Cria a pasta de uploads se não existir
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -20,13 +21,13 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Inicializa o banco de dados e as tabelas
+# Inicializa o banco de dados
 with get_db() as conn:
-    conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT, conteudo TEXT)')
+    conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS progresso (id_livro INTEGER PRIMARY KEY, posicao INTEGER, dark_mode INTEGER DEFAULT 0)')
     conn.commit()
 
-# Rota vital para abrir PDFs com imagens (como o Hábitos Milionários)
+# Rota para servir o PDF original (Resolve o problema das imagens)
 @app.route('/uploads/<filename>')
 def serve_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -46,7 +47,7 @@ def upload():
         file.save(path)
         
         db = get_db()
-        db.execute('INSERT INTO livros (titulo, conteudo) VALUES (?, ?)', (filename, "PDF_ORIGINAL"))
+        db.execute('INSERT INTO livros (titulo) VALUES (?)', (filename,))
         db.commit()
     return redirect(url_for('index'))
 
