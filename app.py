@@ -2,7 +2,6 @@ import os
 import sqlite3
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
-import PyPDF2
 
 app = Flask(__name__)
 
@@ -12,23 +11,22 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'biblioteca.db')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Garante que a pasta de uploads exista antes de iniciar
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-# Inicializa o banco de dados
-def init_db():
-    with get_db() as conn:
-        conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT, conteudo TEXT)')
-        conn.execute('CREATE TABLE IF NOT EXISTS progresso (id_livro INTEGER PRIMARY KEY, posicao INTEGER, dark_mode INTEGER DEFAULT 0)')
-        conn.commit()
+# Inicializa o banco de dados e as tabelas
+with get_db() as conn:
+    conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT, conteudo TEXT)')
+    conn.execute('CREATE TABLE IF NOT EXISTS progresso (id_livro INTEGER PRIMARY KEY, posicao INTEGER, dark_mode INTEGER DEFAULT 0)')
+    conn.commit()
 
-init_db()
-
-# Rota para servir os arquivos PDF originais (resolve o problema das imagens)
+# Rota vital para abrir PDFs com imagens (como o Hábitos Milionários)
 @app.route('/uploads/<filename>')
 def serve_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -47,20 +45,9 @@ def upload():
         path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(path)
         
-        # Mantemos a extração de texto para busca, mas exibiremos o PDF real
-        texto = ""
-        try:
-            with open(path, 'rb') as f:
-                pdf = PyPDF2.PdfReader(f)
-                for page in pdf.pages:
-                    texto += page.extract_text() + "\n"
-            
-            db = get_db()
-            db.execute('INSERT INTO livros (titulo, conteudo) VALUES (?, ?)', (filename, texto))
-            db.commit()
-        except Exception as e:
-            print(f"Erro no processamento: {e}")
-                
+        db = get_db()
+        db.execute('INSERT INTO livros (titulo, conteudo) VALUES (?, ?)', (filename, "PDF_ORIGINAL"))
+        db.commit()
     return redirect(url_for('index'))
 
 @app.route('/ler/<int:id>')
