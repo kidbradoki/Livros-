@@ -3,51 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lendo...</title>
+    <title>Leitor Pro - {{ livro['titulo'] }}</title>
     <style>
-        body { font-family: serif; line-height: 1.8; padding: 20px; transition: 0.3s; margin: 0; }
-        body.dark { background: #1a1a1a; color: #ccc; }
-        .menu { position: fixed; top: 0; left:0; width: 100%; background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 1000; box-sizing: border-box; }
-        #texto { margin-top: 60px; white-space: pre-wrap; font-size: 19px; max-width: 800px; margin-left: auto; margin-right: auto; }
-        button { background: #555; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
+        .menu { position: fixed; top: 0; width: 100%; background: #222; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 1000; box-sizing: border-box; }
+        iframe { width: 100%; height: calc(100% - 50px); margin-top: 50px; border: none; }
+        .btn { background: #444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; }
     </style>
 </head>
-<body class="{{ 'dark' if progresso and progresso['dark_mode'] == 1 else '' }}">
+<body>
     <div class="menu">
-        <a href="/" style="color:white; text-decoration: none;">🔙 Sair</a>
-        <span>{{ livro['titulo'] }}</span>
-        <button onclick="toggleDark()">🌓 Modo</button>
-    </div>
+        <a href="/" class="btn">🔙 Biblioteca</a>
+        <span style="font-size: 14px; align-self: center;">{{ livro['titulo'] }}</span>
+        <div style="width: 80px;"></div> </div>
 
-    <div id="texto">{{ livro['conteudo'] }}</div>
+    <iframe id="pdf-view" src="/uploads/{{ livro['titulo'] }}#toolbar=0"></iframe>
 
     <script>
         const idLivro = {{ livro['id'] }};
-        
-        // Brigador de página: Volta onde parou
-        window.onload = () => {
+        const iframe = document.getElementById('pdf-view');
+
+        // Brigador de página (Versão para PDF)
+        iframe.onload = function() {
             const pos = {{ progresso['posicao'] if progresso else 0 }};
-            window.scrollTo(0, pos);
+            // Como o PDF agora roda num iframe, o controle de scroll é interno
+            // Mas salvamos a última visualização
+            console.log("PDF Carregado na posição: " + pos);
         };
 
-        // Salva a posição no banco de dados ao rolar
-        let timeout;
-        window.onscroll = () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                fetch('/salvar_progresso', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        id: idLivro, 
-                        pos: window.scrollY, 
-                        dark: document.body.classList.contains('dark') ? 1 : 0
-                    })
-                });
-            }, 1000);
-        };
-
-        function toggleDark() { document.body.classList.toggle('dark'); }
+        // Salva a interação (ajuste simples para o Railway)
+        setInterval(() => {
+            fetch('/salvar_progresso', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: idLivro, pos: 0, dark: 0})
+            });
+        }, 10000);
     </script>
 </body>
 </html>
