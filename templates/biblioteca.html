@@ -3,33 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Biblioteca</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .livro { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; align-items: center; }
-        .btn { background: #007bff; color: white; text-decoration: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; }
-        form { margin-bottom: 20px; text-align: center; }
-        input[type="file"] { margin-bottom: 10px; display: block; width: 100%; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+        .nav { height: 50px; background: #222; display: flex; align-items: center; padding: 0 15px; }
+        .btn { color: white; text-decoration: none; font-family: sans-serif; background: #444; padding: 5px 10px; border-radius: 4px; }
+        iframe { width: 100%; height: calc(100% - 50px); border: none; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>📚 Meus Livros</h2>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept=".pdf" required>
-            <button type="submit" style="cursor:pointer; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px;">Enviar PDF</button>
-        </form>
-        <hr>
-        {% for livro in livros %}
-        <div class="livro">
-            <span>{{ livro['titulo'] }}</span>
-            <a href="/ler/{{ livro['id'] }}" class="btn">Ler</a>
-        </div>
-        {% endfor %}
-        {% if not livros %}
-            <p style="text-align:center; color:#888;">Nenhum livro disponível.</p>
-        {% endif %}
-    </div>
+    <div class="nav"><a href="/" class="btn">🔙 Voltar</a></div>
+    <iframe src="/uploads/{{ livro['titulo'] }}"></iframe>
 </body>
 </html>
