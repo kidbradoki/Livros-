@@ -109,7 +109,6 @@ H = """
 """
 
 @app.route('/')
-def index(): return render_template_string(H)
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
