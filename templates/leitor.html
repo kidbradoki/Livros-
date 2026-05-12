@@ -5,30 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ livro['titulo'] }}</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #333; overflow: hidden; }
-        .nav { height: 50px; background: #222; color: white; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #222; overflow: hidden; }
+        .nav { height: 50px; background: #1a1a1a; color: white; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; font-family: sans-serif; }
         iframe { width: 100%; height: calc(100% - 50px); border: none; }
-        .btn-voltar { color: white; text-decoration: none; font-weight: bold; background: #444; padding: 5px 10px; border-radius: 4px; }
+        .btn { color: white; text-decoration: none; background: #444; padding: 5px 15px; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="nav">
-        <a href="/" class="btn-voltar">🔙 Sair</a>
-        <span>{{ livro['titulo'] }}</span>
+        <a href="/" class="btn">🔙 Sair</a>
+        <span style="font-size: 14px;">{{ livro['titulo'] }}</span>
         <div></div>
     </div>
     
     <iframe src="/uploads/{{ livro['titulo'] }}#toolbar=0"></iframe>
 
     <script>
-        // O progresso em PDFs com imagens é salvo via interação
+        // O progresso em PDF real é gerenciado pelo visualizador do browser, 
+        // mas mantemos o ping para o banco de dados ficar ativo.
         setInterval(() => {
             fetch('/salvar_progresso', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({id: {{ livro['id'] }}, pos: 0, dark: 0})
             });
-        }, 15000);
+        }, 30000);
     </script>
 </body>
 </html>
