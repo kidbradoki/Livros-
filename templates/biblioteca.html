@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Biblioteca</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; }
-        .livro { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
-        .btn { background: #007bff; color: white; text-decoration: none; padding: 5px 10px; border-radius: 5px; }
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .livro { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; align-items: center; }
+        .btn { background: #007bff; color: white; text-decoration: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; }
+        form { margin-bottom: 20px; text-align: center; }
+        input[type="file"] { margin-bottom: 10px; display: block; width: 100%; }
     </style>
 </head>
 <body>
@@ -16,7 +18,7 @@
         <h2>📚 Meus Livros</h2>
         <form action="/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="file" accept=".pdf" required>
-            <button type="submit">Enviar PDF</button>
+            <button type="submit" style="cursor:pointer; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px;">Enviar PDF</button>
         </form>
         <hr>
         {% for livro in livros %}
@@ -25,6 +27,9 @@
             <a href="/ler/{{ livro['id'] }}" class="btn">Ler</a>
         </div>
         {% endfor %}
+        {% if not livros %}
+            <p style="text-align:center; color:#888;">Nenhum livro disponível.</p>
+        {% endif %}
     </div>
 </body>
 </html>
