@@ -2,42 +2,27 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minha Biblioteca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lendo: {{ livro['titulo'] }}</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; margin-bottom: 25px; }
-        .upload-section { border: 2px dashed #cbd5e0; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 30px; }
-        .btn-upload { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        .livro-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #edf2f7; }
-        .btn-ler { text-decoration: none; background-color: #3182ce; color: white; padding: 8px 16px; border-radius: 4px; font-size: 14px; }
-        .vazio { text-align: center; color: #a0aec0; margin-top: 20px; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #1a202c; }
+        .topo-menu { height: 50px; background-color: #2d3748; color: white; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; z-index: 10; font-family: sans-serif; }
+        .btn-voltar { color: #edf2f7; text-decoration: none; font-size: 14px; background: #4a5568; padding: 6px 12px; border-radius: 4px; }
+        .pdf-container { height: calc(100% - 50px); width: 100%; border: none; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>📚 Meus Livros</h2>
-        
-        <div class="upload-section">
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" accept=".pdf" required style="font-size: 14px;">
-                <button type="submit" class="btn-upload">Enviar PDF</button>
-            </form>
-        </div>
+    <div class="topo-menu">
+        <a href="/" class="btn-voltar">🔙 Sair</a>
+        <span style="font-size: 13px; font-weight: bold; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            {{ livro['titulo'] }}
+        </span>
+        <div style="width: 40px;"></div>
+    </div>
 
-        <div id="lista-livros">
-            {% for livro in livros %}
-            <div class="livro-item">
-                <span style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70%;">{{ livro['titulo'] }}</span>
-                <a href="/ler/{{ livro['id'] }}" class="btn-ler">Ler Agora</a>
-            </div>
-            {% endfor %}
-            
-            {% if not livros %}
-            <p class="vazio">Nenhum livro disponível na estante.</p>
-            {% endif %}
-        </div>
+    <div class="pdf-container">
+        <iframe src="/uploads/{{ livro['titulo'] }}#toolbar=0" allow="fullscreen"></iframe>
     </div>
 </body>
 </html>
