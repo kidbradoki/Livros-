@@ -2,18 +2,20 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lendo...</title>
     <style>
-        body { font-family: serif; line-height: 1.6; padding: 20px; transition: 0.3s; }
+        body { font-family: serif; line-height: 1.8; padding: 20px; transition: 0.3s; margin: 0; }
         body.dark { background: #1a1a1a; color: #ccc; }
-        .menu { position: fixed; top: 0; width: 100%; background: #333; color: white; left: 0; padding: 10px; display: flex; justify-content: space-between; }
-        #texto { margin-top: 50px; white-space: pre-wrap; font-size: 18px; }
+        .menu { position: fixed; top: 0; left:0; width: 100%; background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 1000; box-sizing: border-box; }
+        #texto { margin-top: 60px; white-space: pre-wrap; font-size: 19px; max-width: 800px; margin-left: auto; margin-right: auto; }
+        button { background: #555; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body class="{{ 'dark' if progresso and progresso['dark_mode'] == 1 else '' }}">
     <div class="menu">
-        <a href="/" style="color:white">🔙 Sair</a>
+        <a href="/" style="color:white; text-decoration: none;">🔙 Sair</a>
+        <span>{{ livro['titulo'] }}</span>
         <button onclick="toggleDark()">🌓 Modo</button>
     </div>
 
@@ -21,16 +23,28 @@
 
     <script>
         const idLivro = {{ livro['id'] }};
-        // Volta para a posição salva no banco
-        window.onload = () => { window.scrollTo(0, {{ progresso['posicao'] if progresso else 0 }}); };
+        
+        // Brigador de página: Volta onde parou
+        window.onload = () => {
+            const pos = {{ progresso['posicao'] if progresso else 0 }};
+            window.scrollTo(0, pos);
+        };
 
-        // Salva a posição sempre que você rolar a tela
+        // Salva a posição no banco de dados ao rolar
+        let timeout;
         window.onscroll = () => {
-            fetch('/salvar_progresso', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: idLivro, pos: window.scrollY, dark: document.body.classList.contains('dark') ? 1 : 0})
-            });
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                fetch('/salvar_progresso', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: idLivro, 
+                        pos: window.scrollY, 
+                        dark: document.body.classList.contains('dark') ? 1 : 0
+                    })
+                });
+            }, 1000);
         };
 
         function toggleDark() { document.body.classList.toggle('dark'); }
