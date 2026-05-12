@@ -2,20 +2,22 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title> Minha Biblioteca ANDRESSA</title>
+    <title>Andressa Reader - Biblioteca</title>
     <style>
-        body { background: #0a0a0a; color: #00FF41; font-family: monospace; padding: 20px; text-align: center; }
-        .container { max-width: 500px; margin: auto; border: 1px solid #00FF41; padding: 20px; border-radius: 10px; }
-        .btn-upload { background: #00FF41; color: #000; padding: 15px; border-radius: 5px; cursor: pointer; display: block; margin-top: 20px; text-decoration: none; font-weight: bold; }
+        body { background: #0a0a0a; color: #ff69b4; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: 50px auto; border: 2px solid #ff69b4; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.2); }
+        h2 { letter-spacing: 2px; }
+        .btn-upload { background: #ff69b4; color: #fff; padding: 15px; border-radius: 10px; cursor: pointer; display: block; margin-top: 25px; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .btn-upload:hover { background: #ff1493; transform: scale(1.05); }
         input[type="file"] { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>📚 MEUS LIVROS</h2>
-        <p>Selecione um PDF para iniciar a leitura com persistência.</p>
+        <h2>📚 ANDRESSA READER</h2>
+        <p>Selecione seu livro favorito para começar.</p>
         <label class="btn-upload">
-            CARREGAR NOVO LIVRO
+            CARREGAR LIVRO
             <input type="file" id="file-selector" accept="application/pdf">
         </label>
     </div>
@@ -26,9 +28,8 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function() {
-                    // Salva o PDF temporariamente no navegador e vai para o leitor
-                    localStorage.setItem('current_pdf', this.result);
-                    localStorage.setItem('current_pdf_name', file.name);
+                    localStorage.setItem('andressa_pdf', this.result);
+                    localStorage.setItem('andressa_pdf_name', file.name);
                     window.location.href = '/leitor';
                 };
                 reader.readAsDataURL(file);
