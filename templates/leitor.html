@@ -1,44 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Leitor Pro - {{ livro['titulo'] }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ livro['titulo'] }}</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
-        .menu { position: fixed; top: 0; width: 100%; background: #222; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 1000; box-sizing: border-box; }
-        iframe { width: 100%; height: calc(100% - 50px); margin-top: 50px; border: none; }
-        .btn { background: #444; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #333; overflow: hidden; }
+        .nav { height: 50px; background: #222; color: white; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; }
+        iframe { width: 100%; height: calc(100% - 50px); border: none; }
+        .btn-voltar { color: white; text-decoration: none; font-weight: bold; background: #444; padding: 5px 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
-    <div class="menu">
-        <a href="/" class="btn">🔙 Biblioteca</a>
-        <span style="font-size: 14px; align-self: center;">{{ livro['titulo'] }}</span>
-        <div style="width: 80px;"></div> </div>
-
-    <iframe id="pdf-view" src="/uploads/{{ livro['titulo'] }}#toolbar=0"></iframe>
+    <div class="nav">
+        <a href="/" class="btn-voltar">🔙 Sair</a>
+        <span>{{ livro['titulo'] }}</span>
+        <div></div>
+    </div>
+    
+    <iframe src="/uploads/{{ livro['titulo'] }}#toolbar=0"></iframe>
 
     <script>
-        const idLivro = {{ livro['id'] }};
-        const iframe = document.getElementById('pdf-view');
-
-        // Brigador de página (Versão para PDF)
-        iframe.onload = function() {
-            const pos = {{ progresso['posicao'] if progresso else 0 }};
-            // Como o PDF agora roda num iframe, o controle de scroll é interno
-            // Mas salvamos a última visualização
-            console.log("PDF Carregado na posição: " + pos);
-        };
-
-        // Salva a interação (ajuste simples para o Railway)
+        // O progresso em PDFs com imagens é salvo via interação
         setInterval(() => {
             fetch('/salvar_progresso', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: idLivro, pos: 0, dark: 0})
+                body: JSON.stringify({id: {{ livro['id'] }}, pos: 0, dark: 0})
             });
-        }, 10000);
+        }, 15000);
     </script>
 </body>
 </html>
