@@ -2,114 +2,53 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Leitor Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>{{ livro[0] }}</title>
     <style>
-        :root {
-            --bg-color: #f5f5f7;
-            --text-color: #1d1d1f;
-            --accent-color: #0071e3;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding-bottom: 50px;
-            line-height: 1.8;
-        }
-        header {
-            background: white;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        main {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-        #book-container {
-            white-space: pre-wrap; /* Mantém as quebras de linha do Python */
-            font-size: 19px;
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        #topBtn {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
+        body { font-family: sans-serif; transition: 0.3s; margin: 0; padding: 20px; line-height: 1.7; }
+        body.dark { background: #1a1a1a; color: #e0e0e0; }
+        #controles { position: fixed; top: 0; left: 0; width: 100%; background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 100; }
+        .conteudo { margin-top: 60px; white-space: pre-wrap; font-size: 18px; }
+        button { padding: 10px; border-radius: 5px; border: none; cursor: pointer; }
     </style>
 </head>
-<body>
+<body id="body">
+    <div id="controles">
+        <a href="/" style="color:white">⬅ Voltar</a>
+        <span>{{ livro[0] }}</span>
+        <button onclick="toggleDark()">🌙 Modo</button>
+    </div>
 
-    <header>
-        <h2 style="margin:0">📖 Leitor Pro</h2>
-    </header>
-
-    <main>
-        <div id="book-container">{{ book_text }}</div>
-    </main>
-
-    <button id="topBtn">⬆</button>
+    <div class="conteudo" id="texto">{{ livro[1] }}</div>
 
     <script>
-        const topBtn = document.getElementById('topBtn');
-        let scrollTimer;
+        const livroId = {{ id }};
+        const posInicial = {{ pos }};
 
-        // 1. Recupera posição salva ao abrir o app
+        // Recupera posição ao carregar
         window.onload = () => {
-            const savedPosition = localStorage.getItem('readingPosition');
-            if (savedPosition) {
-                window.scrollTo({
-                    top: parseInt(savedPosition),
-                    behavior: 'smooth'
-                });
-            }
+            window.scrollTo(0, posInicial);
+            if(localStorage.getItem('dark') === 'true') toggleDark();
         };
 
-        // 2. Salva posição com lógica de "Debounce" (Economiza bateria e créditos do servidor)
-        window.addEventListener('scroll', () => {
-            const currentPos = window.scrollY;
-
-            // Salva no navegador do celular na hora
-            localStorage.setItem('readingPosition', currentPos);
-
-            // Controle do botão Topo
-            topBtn.style.display = currentPos > 400 ? 'block' : 'none';
-
-            // Envia para o servidor apenas se o usuário parar de rolar por 1.5 segundos
-            clearTimeout(scrollTimer);
-            scrollTimer = setTimeout(() => {
-                fetch('/save_position', {
+        // Salva posição ao rolar (Debounce de 1s para economizar servidor)
+        let timer;
+        window.onscroll = () => {
+            localStorage.setItem('pos_' + livroId, window.scrollY);
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                fetch('/salvar', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ position: currentPos })
-                }).then(res => console.log("Posição sincronizada com Railway"));
-            }, 1500);
-        });
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: livroId, pos: window.scrollY})
+                });
+            }, 1000);
+        };
 
-        // 3. Botão Topo
-        topBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        function toggleDark() {
+            const isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('dark', isDark);
+        }
     </script>
-
 </body>
 </html>
