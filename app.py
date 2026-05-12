@@ -1,18 +1,17 @@
 import os
 import sqlite3
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 
 app = Flask(__name__)
 
-# Caminhos absolutos para o ambiente do Railway
+# Caminhos para o Railway
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'biblioteca.db')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Cria a pasta de uploads se não existir
+# CRÍTICO: Garante que a pasta existe para o servidor não parar
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -21,12 +20,11 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Inicializa o banco de dados sem frescuras
+# Inicializa banco de dados
 with get_db() as conn:
     conn.execute('CREATE TABLE IF NOT EXISTS livros (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT)')
     conn.commit()
 
-# Rota para abrir o PDF original (perfeito para livros com imagens)
 @app.route('/uploads/<filename>')
 def serve_pdf(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -41,6 +39,7 @@ def index():
 def upload():
     file = request.files.get('file')
     if file and file.filename.endswith('.pdf'):
+        from werkzeug.utils import secure_filename
         filename = secure_filename(file.filename)
         path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(path)
