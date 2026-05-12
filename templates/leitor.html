@@ -2,27 +2,68 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lendo: {{ livro['titulo'] }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GHOST Reader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #1a202c; }
-        .topo-menu { height: 50px; background-color: #2d3748; color: white; display: flex; align-items: center; padding: 0 15px; justify-content: space-between; position: relative; z-index: 10; font-family: sans-serif; }
-        .btn-voltar { color: #edf2f7; text-decoration: none; font-size: 14px; background: #4a5568; padding: 6px 12px; border-radius: 4px; }
-        .pdf-container { height: calc(100% - 50px); width: 100%; border: none; }
-        iframe { width: 100%; height: 100%; border: none; }
+        body { background: #000; color: #00FF41; font-family: monospace; margin: 0; }
+        .topo { background: #111; padding: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #00FF41; }
+        #pdf-render { width: 100%; display: block; margin: auto; }
+        .controles { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px; border-radius: 30px; border: 1px solid #00FF41; display: flex; gap: 15px; }
+        button { background: #00FF41; border: none; padding: 5px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div class="topo-menu">
-        <a href="/" class="btn-voltar">🔙 Sair</a>
-        <span style="font-size: 13px; font-weight: bold; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            {{ livro['titulo'] }}
-        </span>
-        <div style="width: 40px;"></div>
+    <div class="topo">
+        <a href="/" style="color: #00FF41; text-decoration: none;">< Sair</a>
+        <span id="book-title" style="font-size: 0.7rem;">Carregando...</span>
     </div>
 
-    <div class="pdf-container">
-        <iframe src="/uploads/{{ livro['titulo'] }}#toolbar=0" allow="fullscreen"></iframe>
+    <canvas id="pdf-render"></canvas>
+
+    <div class="controles">
+        <button onclick="changePage(-1)"> < </button>
+        <span id="page-info">Pág: <span id="p-num">1</span></span>
+        <button onclick="changePage(1)"> > </button>
     </div>
+
+    <script>
+        const pdfData = localStorage.getItem('current_pdf');
+        const pdfName = localStorage.getItem('current_pdf_name');
+        let pdfDoc = null, pageNum = 1;
+
+        if (!pdfData) window.location.href = '/';
+        document.getElementById('book-title').innerText = pdfName;
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        pdfjsLib.getDocument(pdfData).promise.then(pdf => {
+            pdfDoc = pdf;
+            // RECUPERA ONDE PAROU
+            const saved = localStorage.getItem('p_' + btoa(pdfName));
+            pageNum = saved ? parseInt(saved) : 1;
+            renderPage(pageNum);
+        });
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(page => {
+                const canvas = document.getElementById('pdf-render');
+                const ctx = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: 1.5 });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
+                    localStorage.setItem('p_' + btoa(pdfName), num); // SALVA A PÁGINA
+                });
+                document.getElementById('p-num').innerText = num;
+            });
+        }
+
+        function changePage(delta) {
+            if (!pdfDoc || (pageNum + delta < 1) || (pageNum + delta > pdfDoc.numPages)) return;
+            pageNum += delta;
+            renderPage(pageNum);
+        }
+    </script>
 </body>
 </html>
