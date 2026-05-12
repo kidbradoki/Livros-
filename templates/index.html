@@ -2,52 +2,54 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>{{ livro[0] }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leitor Pro</title>
     <style>
-        body { font-family: sans-serif; transition: 0.3s; margin: 0; padding: 20px; line-height: 1.7; }
-        body.dark { background: #1a1a1a; color: #e0e0e0; }
-        #controles { position: fixed; top: 0; left: 0; width: 100%; background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; z-index: 100; }
-        .conteudo { margin-top: 60px; white-space: pre-wrap; font-size: 18px; }
-        button { padding: 10px; border-radius: 5px; border: none; cursor: pointer; }
+        body { font-family: sans-serif; line-height: 1.6; transition: 0.3s; margin: 0; padding: 20px; padding-top: 60px; }
+        body.dark { background: #121212; color: #e0e0e0; }
+        .toolbar { position: fixed; top: 0; left: 0; right: 0; height: 50px; background: #333; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 100; }
+        #conteudo { white-space: pre-wrap; font-size: 18px; }
+        .btn { background: #555; color: white; border: none; padding: 8px 12px; border-radius: 5px; }
     </style>
 </head>
-<body id="body">
-    <div id="controles">
-        <a href="/" style="color:white">⬅ Voltar</a>
-        <span>{{ livro[0] }}</span>
-        <button onclick="toggleDark()">🌙 Modo</button>
+<body class="{{ 'dark' if progresso and progresso['dark_mode'] == 1 else '' }}">
+    <div class="toolbar">
+        <button class="btn" onclick="location.href='/'">🔙 Sair</button>
+        <span id="titulo">{{ livro['titulo'] }}</span>
+        <button class="btn" onclick="toggleDark()">🌓 Modo</button>
     </div>
 
-    <div class="conteudo" id="texto">{{ livro[1] }}</div>
+    <div id="conteudo">{{ livro['conteudo'] }}</div>
 
     <script>
-        const livroId = {{ id }};
-        const posInicial = {{ pos }};
+        const idLivro = {{ livro['id'] }};
+        let isDark = {{ 1 if progresso and progresso['dark_mode'] == 1 else 0 }};
 
-        // Recupera posição ao carregar
+        // Brigador de página: Volta para onde parou
         window.onload = () => {
-            window.scrollTo(0, posInicial);
-            if(localStorage.getItem('dark') === 'true') toggleDark();
-        };
-
-        // Salva posição ao rolar (Debounce de 1s para economizar servidor)
-        let timer;
-        window.onscroll = () => {
-            localStorage.setItem('pos_' + livroId, window.scrollY);
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                fetch('/salvar', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({id: livroId, pos: window.scrollY})
-                });
-            }, 1000);
+            const ultimaPos = {{ progresso['posicao'] if progresso else 0 }};
+            window.scrollTo(0, ultimaPos);
         };
 
         function toggleDark() {
-            const isDark = document.body.classList.toggle('dark');
-            localStorage.setItem('dark', isDark);
+            document.body.classList.toggle('dark');
+            isDark = document.body.classList.contains('dark') ? 1 : 0;
+            salvar();
+        }
+
+        // Salva automaticamente ao rolar
+        let timeout;
+        window.onscroll = () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(salvar, 1000);
+        };
+
+        function salvar() {
+            fetch('/salvar_progresso', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: idLivro, pos: window.scrollY, dark: isDark})
+            });
         }
     </script>
 </body>
