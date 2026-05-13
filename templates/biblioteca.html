@@ -2,84 +2,134 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Andressa Reader - Categorias</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Andressa Reader - Minha Estante</title>
     <style>
-        body { background: #0a0a0a; color: #ff69b4; font-family: sans-serif; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: 30px auto; border: 2px solid #ff69b4; padding: 20px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.2); }
+        body { background: #0a0a0a; color: #ff69b4; font-family: sans-serif; padding: 20px; text-align: center; margin: 0; }
+        .container { max-width: 500px; margin: 20px auto; border: 2px solid #ff69b4; padding: 20px; border-radius: 25px; box-shadow: 0 0 25px rgba(255, 105, 180, 0.2); background: #111; }
         
-        /* Estilo das Pastas */
-        .grid-pastas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .pasta { background: #111; border: 1px solid #ff69b4; padding: 15px; border-radius: 15px; cursor: pointer; transition: 0.3s; }
-        .pasta:hover { background: #ff69b4; color: #000; transform: translateY(-5px); }
-        .pasta.active { background: #ff69b4; color: #000; box-shadow: 0 0 15px #ff69b4; }
-        .icon { font-size: 2rem; display: block; margin-bottom: 5px; }
+        .grid-pastas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+        .pasta { background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 15px; cursor: pointer; transition: 0.3s; font-size: 0.8rem; }
+        .pasta.active { border-color: #ff69b4; background: rgba(255, 105, 180, 0.1); box-shadow: 0 0 10px #ff69b4; color: #fff; }
+        .icon { font-size: 1.5rem; display: block; margin-bottom: 5px; }
 
-        .btn-upload { background: #ff69b4; color: #fff; padding: 15px; border-radius: 10px; cursor: pointer; display: block; margin-top: 30px; font-weight: bold; border: none; width: 100%; }
-        input[type="file"] { display: none; }
+        /* Lista de Livros Salvos */
+        #lista-livros { text-align: left; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px; }
+        .livro-item { background: #1a1a1a; margin-bottom: 10px; padding: 12px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #ff69b4; }
+        .livro-info { flex-grow: 1; color: #eee; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
         
-        #status-msg { margin-top: 15px; font-size: 0.8rem; color: #eee; }
+        .btn-abrir { background: #ff69b4; color: #fff; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-remover { color: #ff4141; background: none; border: none; font-size: 1.2rem; cursor: pointer; margin-left: 10px; }
+
+        .btn-upload-label { background: #ff69b4; color: #fff; padding: 15px; border-radius: 12px; cursor: pointer; display: block; margin-top: 20px; font-weight: bold; }
+        input[type="file"] { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>📚 ANDRESSA READER</h2>
-        <p>1. Primeiro, selecione a categoria:</p>
+        <h2 style="letter-spacing: 2px;">🎀 ANDRESSA READER</h2>
         
         <div class="grid-pastas">
-            <div class="pasta" id="pasta-quero" onclick="setCategoria('Quero Ler')">
-                <span class="icon">📑</span>
-                <span>Quero Ler</span>
+            <div class="pasta active" id="p-Lendo" onclick="mudarPasta('Lendo')">
+                <span class="icon">📖</span>Lendo
             </div>
-            <div class="pasta active" id="pasta-lendo" onclick="setCategoria('Lendo')">
-                <span class="icon">📖</span>
-                <span>Lendo</span>
+            <div class="pasta" id="p-Quero" onclick="mudarPasta('Quero Ler')">
+                <span class="icon">📑</span>Quero
             </div>
-            <div class="pasta" id="pasta-lidos" onclick="setCategoria('Lidos')">
-                <span class="icon">✅</span>
-                <span>Lidos</span>
+            <div class="pasta" id="p-Lidos" onclick="mudarPasta('Lidos')">
+                <span class="icon">✅</span>Lidos
             </div>
         </div>
 
-        <p style="margin-top: 30px;">2. Agora, escolha o livro:</p>
-        <label class="btn-upload">
-            CARREGAR PDF PARA ESTA PASTA
+        <div id="lista-livros">
+            </div>
+
+        <label class="btn-upload-label">
+            + ADICIONAR NOVO PDF
             <input type="file" id="file-selector" accept="application/pdf">
         </label>
-        
-        <div id="status-msg">Pronta para leitura!</div>
     </div>
 
     <script>
-        let categoriaAtual = "Lendo";
+        let pastaAtual = "Lendo";
 
-        function setCategoria(cat) {
-            categoriaAtual = cat;
-            // Visual das pastas
+        // Carrega os livros salvos ao abrir
+        window.onload = listarLivros;
+
+        function mudarPasta(novaPasta) {
+            pastaAtual = novaPasta;
             document.querySelectorAll('.pasta').forEach(p => p.classList.remove('active'));
-            if(cat === 'Quero Ler') document.getElementById('pasta-quero').classList.add('active');
-            if(cat === 'Lendo') document.getElementById('pasta-lendo').classList.add('active');
-            if(cat === 'Lidos') document.getElementById('pasta-lidos').classList.add('active');
-            
-            document.getElementById('status-msg').innerText = "Categoria selecionada: " + cat;
+            const id = novaPasta === 'Quero Ler' ? 'p-Quero' : 'p-' + novaPasta;
+            document.getElementById(id).classList.add('active');
+            listarLivros();
+        }
+
+        function listarLivros() {
+            const container = document.getElementById('lista-livros');
+            const livros = JSON.parse(localStorage.getItem('biblioteca_andressa') || "[]");
+            const filtrados = livros.filter(l => l.pasta === pastaAtual);
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `<p style="color: #666; text-align: center;">Nenhum livro em "${pastaAtual}"</p>`;
+                return;
+            }
+
+            container.innerHTML = filtrados.map(livro => `
+                <div class="livro-item">
+                    <div class="livro-info">${livro.nome}</div>
+                    <button class="btn-abrir" onclick="abrirLivro('${livro.id}')">LER</button>
+                    <button class="btn-remover" onclick="removerLivro('${livro.id}')">×</button>
+                </div>
+            `).join('');
         }
 
         document.getElementById('file-selector').onchange = function(e) {
             const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                document.getElementById('status-msg').innerText = "Processando livro...";
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function() {
+                const base64 = this.result;
+                const livroId = 'pdf_' + Date.now();
                 
-                reader.onload = function() {
-                    sessionStorage.setItem('temp_pdf', this.result);
-                    // Salva o nome e a pasta para o leitor saber onde guardar os grifos
-                    localStorage.setItem('andressa_pdf_name', file.name);
-                    localStorage.setItem('andressa_pdf_pasta', categoriaAtual);
-                    
-                    window.location.href = '/leitor';
-                };
-                reader.readAsDataURL(file);
-            }
+                // 1. Salva o conteúdo do PDF
+                localStorage.setItem(livroId, base64);
+                
+                // 2. Adiciona à lista da biblioteca
+                const biblioteca = JSON.parse(localStorage.getItem('biblioteca_andressa') || "[]");
+                biblioteca.push({
+                    id: livroId,
+                    nome: file.name,
+                    pasta: pastaAtual
+                });
+                localStorage.setItem('biblioteca_andressa', JSON.stringify(biblioteca));
+                
+                listarLivros();
+            };
+            reader.readAsDataURL(file);
         };
+
+        function abrirLivro(id) {
+            const biblioteca = JSON.parse(localStorage.getItem('biblioteca_andressa') || "[]");
+            const livro = biblioteca.find(l => l.id === id);
+            const pdfData = localStorage.getItem(id);
+
+            if (pdfData) {
+                sessionStorage.setItem('temp_pdf', pdfData);
+                localStorage.setItem('andressa_pdf_name', livro.nome);
+                window.location.href = '/leitor';
+            }
+        }
+
+        function removerLivro(id) {
+            if (confirm("Remover este livro da estante?")) {
+                let biblioteca = JSON.parse(localStorage.getItem('biblioteca_andressa') || "[]");
+                biblioteca = biblioteca.filter(l => l.id !== id);
+                localStorage.setItem('biblioteca_andressa', JSON.stringify(biblioteca));
+                localStorage.removeItem(id); // Limpa o PDF da memória
+                listarLivros();
+            }
+        }
     </script>
 </body>
 </html>
