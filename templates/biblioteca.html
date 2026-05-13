@@ -2,33 +2,79 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Andressa Reader - Biblioteca</title>
+    <title>Andressa Reader - Categorias</title>
     <style>
         body { background: #0a0a0a; color: #ff69b4; font-family: sans-serif; padding: 20px; text-align: center; }
-        .container { max-width: 500px; margin: 50px auto; border: 2px solid #ff69b4; padding: 30px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.2); }
-        .btn-upload { background: #ff69b4; color: #fff; padding: 15px; border-radius: 10px; cursor: pointer; display: block; margin-top: 25px; font-weight: bold; }
+        .container { max-width: 600px; margin: 30px auto; border: 2px solid #ff69b4; padding: 20px; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 105, 180, 0.2); }
+        
+        /* Estilo das Pastas */
+        .grid-pastas { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .pasta { background: #111; border: 1px solid #ff69b4; padding: 15px; border-radius: 15px; cursor: pointer; transition: 0.3s; }
+        .pasta:hover { background: #ff69b4; color: #000; transform: translateY(-5px); }
+        .pasta.active { background: #ff69b4; color: #000; box-shadow: 0 0 15px #ff69b4; }
+        .icon { font-size: 2rem; display: block; margin-bottom: 5px; }
+
+        .btn-upload { background: #ff69b4; color: #fff; padding: 15px; border-radius: 10px; cursor: pointer; display: block; margin-top: 30px; font-weight: bold; border: none; width: 100%; }
         input[type="file"] { display: none; }
+        
+        #status-msg { margin-top: 15px; font-size: 0.8rem; color: #eee; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>📚 ANDRESSA READER</h2>
-        <p>Escolha um livro do seu dispositivo para ler.</p>
+        <p>1. Primeiro, selecione a categoria:</p>
+        
+        <div class="grid-pastas">
+            <div class="pasta" id="pasta-quero" onclick="setCategoria('Quero Ler')">
+                <span class="icon">📑</span>
+                <span>Quero Ler</span>
+            </div>
+            <div class="pasta active" id="pasta-lendo" onclick="setCategoria('Lendo')">
+                <span class="icon">📖</span>
+                <span>Lendo</span>
+            </div>
+            <div class="pasta" id="pasta-lidos" onclick="setCategoria('Lidos')">
+                <span class="icon">✅</span>
+                <span>Lidos</span>
+            </div>
+        </div>
+
+        <p style="margin-top: 30px;">2. Agora, escolha o livro:</p>
         <label class="btn-upload">
-            ABRIR ARQUIVO PDF
+            CARREGAR PDF PARA ESTA PASTA
             <input type="file" id="file-selector" accept="application/pdf">
         </label>
+        
+        <div id="status-msg">Pronta para leitura!</div>
     </div>
 
     <script>
+        let categoriaAtual = "Lendo";
+
+        function setCategoria(cat) {
+            categoriaAtual = cat;
+            // Visual das pastas
+            document.querySelectorAll('.pasta').forEach(p => p.classList.remove('active'));
+            if(cat === 'Quero Ler') document.getElementById('pasta-quero').classList.add('active');
+            if(cat === 'Lendo') document.getElementById('pasta-lendo').classList.add('active');
+            if(cat === 'Lidos') document.getElementById('pasta-lidos').classList.add('active');
+            
+            document.getElementById('status-msg').innerText = "Categoria selecionada: " + cat;
+        }
+
         document.getElementById('file-selector').onchange = function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
+                document.getElementById('status-msg').innerText = "Processando livro...";
+                
                 reader.onload = function() {
-                    // Armazena apenas o nome para recuperar a página certa depois
                     sessionStorage.setItem('temp_pdf', this.result);
+                    // Salva o nome e a pasta para o leitor saber onde guardar os grifos
                     localStorage.setItem('andressa_pdf_name', file.name);
+                    localStorage.setItem('andressa_pdf_pasta', categoriaAtual);
+                    
                     window.location.href = '/leitor';
                 };
                 reader.readAsDataURL(file);
