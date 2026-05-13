@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Andressa Reader - Leitura</title>
+    <title>Andressa Reader - Grifador Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         body { background: #000; color: #ff69b4; font-family: sans-serif; margin: 0; touch-action: none; overflow: hidden; }
-        .topo { background: #111; padding: 10px; display: flex; justify-content: space-between; border-bottom: 2px solid #ff69b4; }
+        .topo { background: #111; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff69b4; }
         #canvas-container { width: 100%; height: 85vh; overflow: auto; position: relative; display: flex; justify-content: center; }
         canvas { display: block; max-width: 100%; }
-        #highlight-canvas { position: absolute; top: 0; z-index: 5; }
-        .controles { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 30px; border: 1px solid #ff69b4; display: flex; gap: 15px; z-index: 10; }
-        button { background: #ff69b4; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; color: #fff; }
+        /* Camada do grifador */
+        #highlight-canvas { position: absolute; top: 0; z-index: 5; cursor: crosshair; }
+        .controles { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 30px; border: 1px solid #ff69b4; display: flex; gap: 15px; z-index: 10; backdrop-filter: blur(5px); }
+        button { background: #ff69b4; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; color: #fff; cursor: pointer; }
+        .btn-limpar { background: #ff4141; font-size: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <div class="topo">
-        <a href="/" style="color: #ff69b4; text-decoration: none;"> < VOLTAR</a>
-        <span id="book-title" style="font-size: 0.7rem;">Lendo...</span>
-        <button onclick="limparGrifos()" style="background:red; font-size:10px">LIMPAR</button>
+        <a href="/" style="color: #ff69b4; text-decoration: none; font-weight: bold;"> < VOLTAR</a>
+        <span id="book-title" style="font-size: 0.7rem; font-weight: bold;">Andressa Reader</span>
+        <button class="btn-limpar" onclick="limparGrifos()">Limpar Grifos</button>
     </div>
 
     <div id="canvas-container">
@@ -29,16 +31,15 @@
 
     <div class="controles">
         <button onclick="changePage(-1)"> << </button>
-        <span id="p-num" style="align-self:center">1</span>
+        <span id="p-num" style="align-self:center; font-weight:bold;">1</span>
         <button onclick="changePage(1)"> >> </button>
     </div>
 
     <script>
-        // Pega os dados do PDF
         const pdfData = sessionStorage.getItem('temp_pdf');
         const pdfName = localStorage.getItem('andressa_pdf_name');
         const bookId = btoa(pdfName || "default");
-        let pdfDoc = null, pageNum = 1, isDrawing = false;
+        let pdfDoc = null, pageNum = 1, isDrawing = false, currentPath = [];
 
         const canvas = document.getElementById('pdf-render');
         const hCanvas = document.getElementById('highlight-canvas');
@@ -47,7 +48,7 @@
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        if (!pdfData) { alert("Por favor, selecione o livro novamente."); window.location.href = '/'; }
+        if (!pdfData) { window.location.href = '/'; }
         document.getElementById('book-title').innerText = pdfName;
 
         pdfjsLib.getDocument(pdfData).promise.then(pdf => {
@@ -55,7 +56,7 @@
             const saved = localStorage.getItem('and_p_' + bookId);
             pageNum = saved ? parseInt(saved) : 1;
             renderPage(pageNum);
-        }).catch(err => { console.error(err); alert("Erro ao carregar o PDF."); });
+        });
 
         function renderPage(num) {
             pdfDoc.getPage(num).then(page => {
@@ -72,14 +73,25 @@
             });
         }
 
-        // --- FUNÇÕES DE GRIFO E NAVEGAÇÃO (Mantidas as mesmas) ---
+        // --- LÓGICA DO GRIFADOR REFINADA ---
         function carregarGrifos(p) {
             const grifos = JSON.parse(localStorage.getItem('and_g_' + bookId + '_' + p) || "[]");
             hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
-            hCtx.strokeStyle = "rgba(255, 255, 0, 0.4)"; hCtx.lineWidth = 20; hCtx.lineCap = "round";
+            
+            // Estilo do Marca-Texto
+            hCtx.strokeStyle = "rgba(255, 255, 0, 0.35)"; // Amarelo marca-texto suave
+            hCtx.lineWidth = 22; // Largura ideal para cobrir a linha
+            hCtx.lineCap = "round";
+            hCtx.lineJoin = "round";
+
             grifos.forEach(path => {
-                hCtx.beginPath(); hCtx.moveTo(path[0].x, path[0].y);
-                path.forEach(pt => hCtx.lineTo(pt.x, pt.y)); hCtx.stroke();
+                if (path.length < 2) return;
+                hCtx.beginPath();
+                hCtx.moveTo(path[0].x, path[0].y);
+                for (let i = 1; i < path.length; i++) {
+                    hCtx.lineTo(path[i].x, path[i].y);
+                }
+                hCtx.stroke();
             });
         }
 
@@ -87,23 +99,59 @@
             const rect = hCanvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
+            // Ajuste de escala para precisão do toque
+            const scaleX = hCanvas.width / rect.width;
+            const scaleY = hCanvas.height / rect.height;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         }
 
-        function startDrawing(e) { isDrawing = true; currentPath = []; hCtx.beginPath(); const pos = getPos(e); hCtx.moveTo(pos.x, pos.y); currentPath.push(pos); }
-        function draw(e) { if (!isDrawing) return; const pos = getPos(e); hCtx.lineTo(pos.x, pos.y); hCtx.stroke(); currentPath.push(pos); }
-        function stopDrawing() { 
-            if (!isDrawing) return; isDrawing = false; 
+        function startDrawing(e) {
+            isDrawing = true;
+            currentPath = [];
+            const pos = getPos(e);
+            currentPath.push(pos);
+            hCtx.beginPath();
+            hCtx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); // Impede a página de rolar enquanto grifa
+            const pos = getPos(e);
+            currentPath.push(pos);
+            hCtx.lineTo(pos.x, pos.y);
+            hCtx.stroke();
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
             const key = 'and_g_' + bookId + '_' + pageNum;
             const grifos = JSON.parse(localStorage.getItem(key) || "[]");
-            grifos.push(currentPath); localStorage.setItem(key, JSON.stringify(grifos));
+            grifos.push(currentPath);
+            localStorage.setItem(key, JSON.stringify(grifos));
         }
 
-        function changePage(delta) { if (!pdfDoc || (pageNum+delta < 1) || (pageNum+delta > pdfDoc.numPages)) return; pageNum += delta; renderPage(pageNum); }
-        function limparGrifos() { if(confirm("Limpar marcações?")) { localStorage.removeItem('and_g_' + bookId + '_' + pageNum); renderPage(pageNum); } }
+        function changePage(delta) {
+            if (!pdfDoc || (pageNum + delta < 1) || (pageNum + delta > pdfDoc.numPages)) return;
+            pageNum += delta;
+            renderPage(pageNum);
+        }
 
-        hCanvas.addEventListener('mousedown', startDrawing); hCanvas.addEventListener('mousemove', draw); window.addEventListener('mouseup', stopDrawing);
-        hCanvas.addEventListener('touchstart', startDrawing); hCanvas.addEventListener('touchmove', draw); hCanvas.addEventListener('touchend', stopDrawing);
+        function limparGrifos() {
+            if(confirm("Deseja apagar os grifos desta página?")) {
+                localStorage.removeItem('and_g_' + bookId + '_' + pageNum);
+                renderPage(pageNum);
+            }
+        }
+
+        // Eventos de Toque e Mouse
+        hCanvas.addEventListener('mousedown', startDrawing);
+        hCanvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+        hCanvas.addEventListener('touchstart', startDrawing, {passive: false});
+        hCanvas.addEventListener('touchmove', draw, {passive: false});
+        hCanvas.addEventListener('touchend', stopDrawing);
     </script>
 </body>
 </html>
