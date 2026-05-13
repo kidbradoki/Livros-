@@ -3,35 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Andressa Reader - Grifador Pro</title>
+    <title>Andressa Reader - Leitura Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        body { background: #000; color: #ff69b4; font-family: sans-serif; margin: 0; touch-action: none; overflow: hidden; }
-        .topo { background: #111; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff69b4; }
-        #canvas-container { width: 100%; height: 85vh; overflow: auto; position: relative; display: flex; justify-content: center; }
-        canvas { display: block; max-width: 100%; }
-        /* Camada do grifador */
-        #highlight-canvas { position: absolute; top: 0; z-index: 5; cursor: crosshair; }
-        .controles { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 10px 20px; border-radius: 30px; border: 1px solid #ff69b4; display: flex; gap: 15px; z-index: 10; backdrop-filter: blur(5px); }
-        button { background: #ff69b4; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; color: #fff; cursor: pointer; }
-        .btn-limpar { background: #ff4141; font-size: 10px; text-transform: uppercase; }
+        body { background: #000; color: #ff69b4; font-family: sans-serif; margin: 0; touch-action: none; }
+        .topo { background: #111; padding: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff69b4; position: sticky; top: 0; z-index: 100; }
+        
+        /* Ajuste crucial para o scroll e grifos */
+        #canvas-wrapper { position: relative; margin: 0 auto; display: block; }
+        #pdf-render { display: block; width: 100%; }
+        
+        /* O segredo para não esconder o texto: mix-blend-mode */
+        #highlight-canvas { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 5; 
+            cursor: crosshair; 
+            mix-blend-mode: multiply; /* Faz o amarelo ficar "atrás" do preto do texto */
+        }
+
+        .controles { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 12px 25px; border-radius: 35px; border: 1px solid #ff69b4; display: flex; gap: 20px; z-index: 1000; backdrop-filter: blur(5px); }
+        button { background: #ff69b4; border: none; padding: 8px 18px; border-radius: 15px; font-weight: bold; cursor: pointer; color: #fff; }
+        .btn-limpar { background: #ff4141; font-size: 10px; }
     </style>
 </head>
 <body>
     <div class="topo">
-        <a href="/" style="color: #ff69b4; text-decoration: none; font-weight: bold;"> < VOLTAR</a>
-        <span id="book-title" style="font-size: 0.7rem; font-weight: bold;">Andressa Reader</span>
-        <button class="btn-limpar" onclick="limparGrifos()">Limpar Grifos</button>
+        <a href="/" style="color: #ff69b4; text-decoration: none; font-weight: bold;">< VOLTAR</a>
+        <span id="book-title" style="font-size: 0.7rem; max-width: 50%;">Carregando...</span>
+        <button class="btn-limpar" onclick="limparGrifos()">LIMPAR</button>
     </div>
 
-    <div id="canvas-container">
+    <div id="canvas-wrapper">
         <canvas id="pdf-render"></canvas>
         <canvas id="highlight-canvas"></canvas>
     </div>
 
     <div class="controles">
         <button onclick="changePage(-1)"> << </button>
-        <span id="p-num" style="align-self:center; font-weight:bold;">1</span>
+        <span id="p-num" style="font-weight: bold;">1</span>
         <button onclick="changePage(1)"> >> </button>
     </div>
 
@@ -48,7 +59,7 @@
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        if (!pdfData) { window.location.href = '/'; }
+        if (!pdfData) window.location.href = '/';
         document.getElementById('book-title').innerText = pdfName;
 
         pdfjsLib.getDocument(pdfData).promise.then(pdf => {
@@ -61,26 +72,31 @@
         function renderPage(num) {
             pdfDoc.getPage(num).then(page => {
                 const viewport = page.getViewport({ scale: 1.5 });
+                
+                // Ajusta o tamanho dos dois canvas para serem IGUAIS ao tamanho da página do PDF
                 canvas.height = hCanvas.height = viewport.height;
                 canvas.width = hCanvas.width = viewport.width;
+                
+                // Ajusta o wrapper para que o scroll funcione em toda a extensão
+                const wrapper = document.getElementById('canvas-wrapper');
+                wrapper.style.width = viewport.width + 'px';
+                wrapper.style.height = viewport.height + 'px';
 
                 page.render({ canvasContext: ctx, viewport: viewport }).promise.then(() => {
                     localStorage.setItem('and_p_' + bookId, num);
                     carregarGrifos(num);
                 });
                 document.getElementById('p-num').innerText = num;
-                document.getElementById('canvas-container').scrollTop = 0;
+                window.scrollTo(0, 0);
             });
         }
 
-        // --- LÓGICA DO GRIFADOR REFINADA ---
         function carregarGrifos(p) {
             const grifos = JSON.parse(localStorage.getItem('and_g_' + bookId + '_' + p) || "[]");
             hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
             
-            // Estilo do Marca-Texto
-            hCtx.strokeStyle = "rgba(255, 255, 0, 0.35)"; // Amarelo marca-texto suave
-            hCtx.lineWidth = 22; // Largura ideal para cobrir a linha
+            hCtx.strokeStyle = "rgba(255, 255, 0, 0.8)"; // Amarelo mais forte (o Multiply cuida da transparência)
+            hCtx.lineWidth = 25;
             hCtx.lineCap = "round";
             hCtx.lineJoin = "round";
 
@@ -88,9 +104,7 @@
                 if (path.length < 2) return;
                 hCtx.beginPath();
                 hCtx.moveTo(path[0].x, path[0].y);
-                for (let i = 1; i < path.length; i++) {
-                    hCtx.lineTo(path[i].x, path[i].y);
-                }
+                path.forEach(pt => hCtx.lineTo(pt.x, pt.y));
                 hCtx.stroke();
             });
         }
@@ -99,10 +113,14 @@
             const rect = hCanvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            // Ajuste de escala para precisão do toque
+            
+            // Cálculo preciso para ignorar o scroll da página e acertar o lugar do dedo
             const scaleX = hCanvas.width / rect.width;
             const scaleY = hCanvas.height / rect.height;
-            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+            return { 
+                x: (clientX - rect.left) * scaleX, 
+                y: (clientY - rect.top) * scaleY 
+            };
         }
 
         function startDrawing(e) {
@@ -116,11 +134,11 @@
 
         function draw(e) {
             if (!isDrawing) return;
-            e.preventDefault(); // Impede a página de rolar enquanto grifa
+            // Só cancela o scroll se estiver grifando horizontalmente
             const pos = getPos(e);
-            currentPath.push(pos);
             hCtx.lineTo(pos.x, pos.y);
             hCtx.stroke();
+            currentPath.push(pos);
         }
 
         function stopDrawing() {
@@ -139,18 +157,17 @@
         }
 
         function limparGrifos() {
-            if(confirm("Deseja apagar os grifos desta página?")) {
+            if(confirm("Apagar todos os grifos da página?")) {
                 localStorage.removeItem('and_g_' + bookId + '_' + pageNum);
                 renderPage(pageNum);
             }
         }
 
-        // Eventos de Toque e Mouse
         hCanvas.addEventListener('mousedown', startDrawing);
         hCanvas.addEventListener('mousemove', draw);
         window.addEventListener('mouseup', stopDrawing);
-        hCanvas.addEventListener('touchstart', startDrawing, {passive: false});
-        hCanvas.addEventListener('touchmove', draw, {passive: false});
+        hCanvas.addEventListener('touchstart', startDrawing);
+        hCanvas.addEventListener('touchmove', draw);
         hCanvas.addEventListener('touchend', stopDrawing);
     </script>
 </body>
