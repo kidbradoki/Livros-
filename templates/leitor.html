@@ -3,41 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Andressa Reader - Leitura Pro</title>
+    <title>Andressa Reader - Leitura Total</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
-        body { background: #000; color: #ff69b4; font-family: sans-serif; margin: 0; touch-action: none; }
+        body { background: #000; color: #ff69b4; font-family: sans-serif; margin: 0; overflow-x: hidden; }
         .topo { background: #111; padding: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ff69b4; position: sticky; top: 0; z-index: 100; }
         
-        /* Ajuste crucial para o scroll e grifos */
-        #canvas-wrapper { position: relative; margin: 0 auto; display: block; }
-        #pdf-render { display: block; width: 100%; }
+        /* Centraliza o livro e permite o scroll vertical natural */
+        #main-container { width: 100vw; display: flex; justify-content: center; background: #000; }
+        #canvas-wrapper { position: relative; box-shadow: 0 0 15px rgba(255,105,180,0.3); }
         
-        /* O segredo para não esconder o texto: mix-blend-mode */
+        #pdf-render { display: block; max-width: 100%; height: auto; }
+        
         #highlight-canvas { 
             position: absolute; 
             top: 0; 
             left: 0; 
             z-index: 5; 
-            cursor: crosshair; 
-            mix-blend-mode: multiply; /* Faz o amarelo ficar "atrás" do preto do texto */
+            mix-blend-mode: multiply; 
+            touch-action: none; /* Importante para o grifador não bugar no toque */
         }
 
-        .controles { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); padding: 12px 25px; border-radius: 35px; border: 1px solid #ff69b4; display: flex; gap: 20px; z-index: 1000; backdrop-filter: blur(5px); }
-        button { background: #ff69b4; border: none; padding: 8px 18px; border-radius: 15px; font-weight: bold; cursor: pointer; color: #fff; }
+        .controles { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.95); padding: 10px 20px; border-radius: 35px; border: 1px solid #ff69b4; display: flex; gap: 20px; z-index: 1000; }
+        button { background: #ff69b4; border: none; padding: 8px 15px; border-radius: 12px; font-weight: bold; color: #fff; }
         .btn-limpar { background: #ff4141; font-size: 10px; }
     </style>
 </head>
 <body>
     <div class="topo">
         <a href="/" style="color: #ff69b4; text-decoration: none; font-weight: bold;">< VOLTAR</a>
-        <span id="book-title" style="font-size: 0.7rem; max-width: 50%;">Carregando...</span>
+        <span id="book-title" style="font-size: 0.7rem; color: #eee;">Andressa Reader</span>
         <button class="btn-limpar" onclick="limparGrifos()">LIMPAR</button>
     </div>
 
-    <div id="canvas-wrapper">
-        <canvas id="pdf-render"></canvas>
-        <canvas id="highlight-canvas"></canvas>
+    <div id="main-container">
+        <div id="canvas-wrapper">
+            <canvas id="pdf-render"></canvas>
+            <canvas id="highlight-canvas"></canvas>
+        </div>
     </div>
 
     <div class="controles">
@@ -71,13 +74,15 @@
 
         function renderPage(num) {
             pdfDoc.getPage(num).then(page => {
-                const viewport = page.getViewport({ scale: 1.5 });
-                
-                // Ajusta o tamanho dos dois canvas para serem IGUAIS ao tamanho da página do PDF
+                // AJUSTE DE ESCALA DINÂMICO
+                const windowWidth = window.innerWidth;
+                const unscaledViewport = page.getViewport({ scale: 1 });
+                const scale = windowWidth / unscaledViewport.width; // Faz o PDF ocupar 100% da largura da tela
+                const viewport = page.getViewport({ scale: scale });
+
                 canvas.height = hCanvas.height = viewport.height;
                 canvas.width = hCanvas.width = viewport.width;
                 
-                // Ajusta o wrapper para que o scroll funcione em toda a extensão
                 const wrapper = document.getElementById('canvas-wrapper');
                 wrapper.style.width = viewport.width + 'px';
                 wrapper.style.height = viewport.height + 'px';
@@ -91,14 +96,13 @@
             });
         }
 
+        // Lógica de Grifos (Mantida com os ajustes de precisão)
         function carregarGrifos(p) {
             const grifos = JSON.parse(localStorage.getItem('and_g_' + bookId + '_' + p) || "[]");
             hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
-            
-            hCtx.strokeStyle = "rgba(255, 255, 0, 0.8)"; // Amarelo mais forte (o Multiply cuida da transparência)
-            hCtx.lineWidth = 25;
-            hCtx.lineCap = "round";
-            hCtx.lineJoin = "round";
+            hCtx.strokeStyle = "rgba(255, 255, 0, 0.8)";
+            hCtx.lineWidth = 20; 
+            hCtx.lineCap = "round"; hCtx.lineJoin = "round";
 
             grifos.forEach(path => {
                 if (path.length < 2) return;
@@ -113,62 +117,26 @@
             const rect = hCanvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            // Cálculo preciso para ignorar o scroll da página e acertar o lugar do dedo
-            const scaleX = hCanvas.width / rect.width;
-            const scaleY = hCanvas.height / rect.height;
             return { 
-                x: (clientX - rect.left) * scaleX, 
-                y: (clientY - rect.top) * scaleY 
+                x: (clientX - rect.left) * (hCanvas.width / rect.width), 
+                y: (clientY - rect.top) * (hCanvas.height / rect.height)
             };
         }
 
-        function startDrawing(e) {
-            isDrawing = true;
-            currentPath = [];
-            const pos = getPos(e);
-            currentPath.push(pos);
-            hCtx.beginPath();
-            hCtx.moveTo(pos.x, pos.y);
-        }
-
-        function draw(e) {
-            if (!isDrawing) return;
-            // Só cancela o scroll se estiver grifando horizontalmente
-            const pos = getPos(e);
-            hCtx.lineTo(pos.x, pos.y);
-            hCtx.stroke();
-            currentPath.push(pos);
-        }
-
-        function stopDrawing() {
-            if (!isDrawing) return;
-            isDrawing = false;
+        function startDrawing(e) { isDrawing = true; currentPath = []; const pos = getPos(e); hCtx.beginPath(); hCtx.moveTo(pos.x, pos.y); currentPath.push(pos); }
+        function draw(e) { if (!isDrawing) return; const pos = getPos(e); hCtx.lineTo(pos.x, pos.y); hCtx.stroke(); currentPath.push(pos); }
+        function stopDrawing() { 
+            if (!isDrawing) return; isDrawing = false; 
             const key = 'and_g_' + bookId + '_' + pageNum;
             const grifos = JSON.parse(localStorage.getItem(key) || "[]");
-            grifos.push(currentPath);
-            localStorage.setItem(key, JSON.stringify(grifos));
+            grifos.push(currentPath); localStorage.setItem(key, JSON.stringify(grifos));
         }
 
-        function changePage(delta) {
-            if (!pdfDoc || (pageNum + delta < 1) || (pageNum + delta > pdfDoc.numPages)) return;
-            pageNum += delta;
-            renderPage(pageNum);
-        }
+        function changePage(delta) { if (!pdfDoc || (pageNum + delta < 1) || (pageNum + delta > pdfDoc.numPages)) return; pageNum += delta; renderPage(pageNum); }
+        function limparGrifos() { if(confirm("Apagar grifos desta página?")) { localStorage.removeItem('and_g_' + bookId + '_' + pageNum); renderPage(pageNum); } }
 
-        function limparGrifos() {
-            if(confirm("Apagar todos os grifos da página?")) {
-                localStorage.removeItem('and_g_' + bookId + '_' + pageNum);
-                renderPage(pageNum);
-            }
-        }
-
-        hCanvas.addEventListener('mousedown', startDrawing);
-        hCanvas.addEventListener('mousemove', draw);
-        window.addEventListener('mouseup', stopDrawing);
-        hCanvas.addEventListener('touchstart', startDrawing);
-        hCanvas.addEventListener('touchmove', draw);
-        hCanvas.addEventListener('touchend', stopDrawing);
+        hCanvas.addEventListener('mousedown', startDrawing); hCanvas.addEventListener('mousemove', draw); window.addEventListener('mouseup', stopDrawing);
+        hCanvas.addEventListener('touchstart', startDrawing); hCanvas.addEventListener('touchmove', draw); hCanvas.addEventListener('touchend', stopDrawing);
     </script>
 </body>
 </html>
